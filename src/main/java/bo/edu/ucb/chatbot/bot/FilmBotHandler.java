@@ -2,6 +2,7 @@ package bo.edu.ucb.chatbot.bot;
 
 
 import bo.edu.ucb.chatbot.bl.ActorSearchBl;
+import bo.edu.ucb.chatbot.bl.BotActorFilmSearchBL;
 import bo.edu.ucb.chatbot.bl.BotActorSearchBl;
 import bo.edu.ucb.chatbot.bl.BotFilmSearchBl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,11 +19,13 @@ public class FilmBotHandler extends TelegramLongPollingBot {
 
     private BotFilmSearchBl botFilmSearchBl;
     private  BotActorSearchBl botactorSearchBl;
+    private BotActorFilmSearchBL botActorFilmSearchBL;
 
     @Autowired
-    public FilmBotHandler(BotFilmSearchBl botFilmSearchBl,BotActorSearchBl botactorSearchBl) {
+    public FilmBotHandler(BotFilmSearchBl botFilmSearchBl,BotActorSearchBl botactorSearchBl,BotActorFilmSearchBL botActorFilmSearchBL) {
         this.botFilmSearchBl = botFilmSearchBl;
         this.botactorSearchBl = botactorSearchBl;
+        this.botActorFilmSearchBL = botActorFilmSearchBL;
     }
 
     @Override
@@ -42,23 +45,39 @@ public class FilmBotHandler extends TelegramLongPollingBot {
             String chatId = update.getMessage().getChatId().toString();
             String text = update.getMessage().getText();
             // dividir cadena split
-            String[] cad = text.split("=");
+
             //Verificar tipo de peticion
+            //Juntos
+            Boolean caso = text.contains("@");
+
+            if (caso) {
+                String[] cade = text.split("@");
+                //juntos datos
+                String[] cad = cade[0].split("=");
+                String[] cad1 = cade[1].split("=");
+                String[] name = cad1[1].split(" ");
+                List<String> responses = botActorFilmSearchBL.processMessage2(cad[1],name[0],name[1]);
+                sendMessage(chatId, responses);
+
+            } else {
             //solo titulo
-            if(cad[0].equals("Titulo")){
+            String[] cad = text.split("=");
+            if (cad[0].equals("Titulo")) {
                 String title = cad[1];
                 List<String> responses = botFilmSearchBl.processMessage(title);
                 sendMessage(chatId, responses);
             }
             //solo actor
-            else{
-                String[] name=cad[1].split(" ");
-                List<String> responses = BotActorSearchBl.processMessage1(name[0],name[1]);
+            else {
+                String[] name = cad[1].split(" ");
+                List<String> responses = BotActorSearchBl.processMessage1(name[0], name[1]);
                 sendMessage(chatId, responses);
             }
 
         }
     }
+    }
+
 
     private void sendMessage( String chatId, String messageText) {
         SendMessage message = new SendMessage(); // Create a SendMessage object with mandatory fields
